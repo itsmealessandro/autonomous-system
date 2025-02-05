@@ -4,7 +4,7 @@ WORKDIR .
 
 COPY ./act.py ./
 
-#RUN pip install paho-mqtt
+RUN pip install paho-mqtt
 
 CMD ["python" ,"./act.py"]
 

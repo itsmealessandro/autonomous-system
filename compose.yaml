@@ -3,13 +3,17 @@ services:
   # MOSQUITTO -----------------------------------
   # --------------------------------------------
   broker:
+    env_file:
+      - .env
     container_name: mosquitto-container
     hostname: mosquittoName
     image: eclipse-mosquitto
     ports:
-      - "1883:1883"
+      - "${MOSQUITTO_PORT}:1883"
+    networks:
+      - mqtt
     volumes:
-      - mosquitto_data:/mosquitto/data
+      - ./mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
 
   # --------------------------------------------
   # sensors -----------------------------------
@@ -20,6 +24,10 @@ services:
     build: ./sensors/
     volumes:
       - ./simulated_env:/simulated_env
+    depends_on:
+      - broker
+    networks:
+      - mqtt
 
   # --------------------------------------------
   # actuators -----------------------------------
