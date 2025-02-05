@@ -8,7 +8,8 @@ services:
     image: eclipse-mosquitto
     ports:
       - "1883:1883"
-
+    volumes:
+      - mosquitto_data:/mosquitto/data
 
   # --------------------------------------------
   # sensors -----------------------------------
@@ -35,4 +36,5 @@ networks:
     driver: bridge
 
 volumes:
-  - simulated_env:
+  mosquitto_data:
+  simulated_env:
