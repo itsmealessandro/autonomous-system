@@ -1,19 +1,28 @@
-import json
+import json,random
+from time import sleep
 
 FILE_PATH = "/simulated_env/env.json"
 # Lettura dal file
 try:
-    with open(FILE_PATH, "r") as file:
-        data = json.load(file)  # Carica il JSON
+    i=0
+    while(i<10):
+        sleep(1)
+        i=i+1
+        # Leggi il contenuto del file
+        with open(FILE_PATH, "r") as file:
+            data = json.load(file)
 
-        # Estrai il valore di "value_x"
-        value_x = data.get("data1", {}).get("value_x", None)
-
-        if value_x is not None:
-            print(f"valore  : {value_x}")
+        # Modifica il valore di data1.value_x
+        if "data1" in data and "value_x" in data["data1"]:
+            val= random.randint(0,5)
+            data["data1"]["value_x"] = val  # Imposta "b" come nuovo valore
         else:
-            print("Errore: valore 'value_x' non trovato nel JSON.")
-except FileNotFoundError:
-    print(f"Errore: il file {FILE_PATH} non esiste.")
-except json.JSONDecodeError:
-    print(f"Errore: il file {FILE_PATH} non è un JSON valido.")
+            print("Chiave data1.value_x non trovata!")
+
+        # Scrivi il nuovo contenuto nel file
+        with open(FILE_PATH, "w") as file:
+            json.dump(data, file, indent=4)
+
+        print("File aggiornato con successo!")
+except Exception as e:
+    print(f"Errore nella lettura/scrittura del file: {e}")
