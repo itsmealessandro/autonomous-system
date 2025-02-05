@@ -1,0 +1,40 @@
+services:
+  # --------------------------------------------
+  # MOSQUITTO -----------------------------------
+  # --------------------------------------------
+  broker:
+    container_name: mosquitto-container
+    hostname: mosquittoName
+    image: eclipse-mosquitto
+    ports:
+      - "1883:1883"
+    volumes:
+      - mosquitto_data:/mosquitto/data
+
+  # --------------------------------------------
+  # sensors -----------------------------------
+  # --------------------------------------------
+  sensors:
+    container_name: sensCont
+    hostname: sensHost
+    build: ./sensors/
+    volumes:
+      - ./simulated_env:/simulated_env
+
+  # --------------------------------------------
+  # actuators -----------------------------------
+  # --------------------------------------------
+  actuators:
+    container_name: actCont
+    hostname: actHost
+    build: ./actuators/
+    volumes:
+      - ./simulated_env:/simulated_env
+
+networks:
+  mqtt:
+    driver: bridge
+
+volumes:
+  mosquitto_data:
+  simulated_env:
