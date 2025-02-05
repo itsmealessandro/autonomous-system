@@ -19,7 +19,7 @@ services:
     hostname: sensHost
     build: ./sensors/
     volumes:
-      - simulated_env:/simulated_env
+      - ./simulated_env:/simulated_env
 
   # --------------------------------------------
   # actuators -----------------------------------
@@ -29,7 +29,7 @@ services:
     hostname: actHost
     build: ./actuators/
     volumes:
-      - simulated_env:/simulated_env
+      - ./simulated_env:/simulated_env
 
 networks:
   mqtt:
