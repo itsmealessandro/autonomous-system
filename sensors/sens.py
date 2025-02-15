@@ -1,39 +1,38 @@
+import paho.mqtt.client as mqtt
 import json
+import random
 import time
-import paho.mqtt.client as mqtt, time
+import threading
 
+# Carica la configurazione dell'ambiente
+with open("/app/env/env.json") as f:  # Percorso corretto nel container
+    config = json.load(f)
 
-# Creazione del client MQTT
-mqttc = mqtt.Client()
+# Connessione al broker MQTT
+client = mqtt.Client()
+client.connect("mosquitto", 1883, 60)
 
-mqttc.connect("mosquitto-container", 1883, 60)
+# Funzione per pubblicare i dati dei sensori
+def publish_sensor_data(room, sensor):
+    while True:
+        # Genera un valore casuale per il sensore
+        value = round(random.uniform(sensor["min_value"], sensor["max_value"]), 2)
+        # Crea il topic MQTT (es. home/room1/temperature)
+        topic = f"home/{room['name']}/{sensor['type']}"
+        # Pubblica il valore sul topic
+        client.publish(topic, json.dumps({"value": value}))
+        print(f"Pubblicato: {topic} -> {value}")
+        # Attendi prima di pubblicare il prossimo valore
+        time.sleep(5)
 
+# Avvia un thread per ogni sensore in ogni stanza
+threads = []
+for room in config["rooms"]:
+    for sensor in room["sensors"]:
+        thread = threading.Thread(target=publish_sensor_data, args=(room, sensor))
+        thread.daemon = True  # Il thread si chiuderà quando il programma principale termina
+        thread.start()
+        threads.append(thread)
 
-
-FILE_PATH = "/simulated_env/env.json"
-# Lettura dal file
-try:
-
-    i=0
-    while(i<10):
-        i=i+1
-        time.sleep(1)
-        with open(FILE_PATH, "r") as file:
-            data = json.load(file)  # Carica il JSON
-
-            # Estrai il valore di "value_x"
-            value_x = data.get("data1", {}).get("value_x", None)
-
-            if value_x is not None:
-                message= "this is the value_x: "+ str(value_x)
-                mqttc.publish("sens1", message)
-                print(f"published value  : {value_x}")
-            else:
-                print("Errore: valore 'value_x' non trovato nel JSON.")
-except FileNotFoundError:
-    print(f"Errore: il file {FILE_PATH} non esiste.")
-except json.JSONDecodeError:
-    print(f"Errore: il file {FILE_PATH} non è un JSON valido.")
-
-
-mqttc.disconnect()
+# Loop per mantenere la connessione attiva
+client.loop_forever()

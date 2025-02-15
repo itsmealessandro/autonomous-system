@@ -1,10 +1,15 @@
-FROM python:3
+FROM python:3.9-slim
+WORKDIR /app
 
-WORKDIR .
+# Copia i requisiti e installa le dipendenze
+COPY ./actuators/requirements.txt .
+RUN pip install -r requirements.txt
 
-COPY ./act.py ./
+# Copia il codice degli attuatori
+COPY ./actuators/ .
 
-RUN pip install paho-mqtt
+# Copia il file di configurazione dell'ambiente
+COPY ./simulated_env/env.json /app/env/env.json
 
-CMD ["python" ,"./act.py"]
-
+# Comando di avvio
+CMD ["python", "act.py"]
