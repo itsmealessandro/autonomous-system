@@ -11,7 +11,8 @@ services:
     networks:
       - mqtt
     volumes:
-      - ./mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf:rw  # Monta come lettura/scrittura
+    restart: unless-stopped
 
   sensors:
     container_name: sensCont
@@ -29,7 +30,8 @@ services:
       - MQTT_BROKER=mosquitto
       - MQTT_PORT=${MOSQUITTO_PORT}
 
-  #   actuators:
+#commentato actuators e manager, in teoria dovrebbero funzionare, magari con qualche bug(?)
+#   actuators:
 #     container_name: actCont
 #     hostname: actuators
 #     build:
@@ -63,22 +65,22 @@ services:
 #       - MQTT_BROKER=mosquitto
 #       - MQTT_PORT=${MOSQUITTO_PORT}
 
-  # Aggiungi Node-RED
-  node-red:
-    image: nodered/node-red
-    container_name: node-red
-    ports:
-      - "1880:1880"  # Porta per l'interfaccia web di Node-RED
-    volumes:
-      - ./node-red-data:/data  # Salva i flussi di Node-RED
-      - ./simulated_env:/app/env  # Monta il file env.json
-    depends_on:
-      - broker
-    networks:
-      - mqtt
-    environment:
-      - NODE_RED_ENABLE_PROJECTS=true
-    restart: unless-stopped
+# configurazione per aggiungere node-red
+  # node-red:
+  #   image: nodered/node-red
+  #   container_name: node-red
+  #   ports:
+  #     - "1880:1880"  # Porta per l'interfaccia web di Node-RED
+  #   volumes:
+  #     - ./node-red-data:/data  # Salva i flussi di Node-RED
+  #     - ./simulated_env:/app/env  # Monta il file env.json
+  #   depends_on:
+  #     - broker
+  #   networks:
+  #     - mqtt
+  #   environment:
+  #     - NODE_RED_ENABLE_PROJECTS=true
+  #   restart: unless-stopped
 
 networks:
   mqtt:
