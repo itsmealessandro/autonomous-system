@@ -1,43 +1,86 @@
+version: '3'
 services:
-  # --------------------------------------------
-  # MOSQUITTO -----------------------------------
-  # --------------------------------------------
   broker:
     env_file:
       - .env
     container_name: mosquitto-container
-    hostname: mosquittoName
+    hostname: mosquitto
     image: eclipse-mosquitto
     ports:
       - "${MOSQUITTO_PORT}:1883"
     networks:
       - mqtt
     volumes:
-      - ./mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf:rw  # Monta come lettura/scrittura
+    restart: unless-stopped
 
-  # --------------------------------------------
-  # sensors -----------------------------------
-  # --------------------------------------------
   sensors:
     container_name: sensCont
-    hostname: sensHost
-    build: ./sensors/
+    hostname: sensors
+    build:
+      context: .  # Il contesto di build è la root del progetto
+      dockerfile: ./sensors/Dockerfile
     volumes:
-      - ./simulated_env:/simulated_env
+      - ./simulated_env:/app/env
     depends_on:
       - broker
     networks:
       - mqtt
+    environment:
+      - MQTT_BROKER=mosquitto
+      - MQTT_PORT=${MOSQUITTO_PORT}
 
-  # --------------------------------------------
-  # actuators -----------------------------------
-  # --------------------------------------------
-  actuators:
-    container_name: actCont
-    hostname: actHost
-    build: ./actuators/
-    volumes:
-      - ./simulated_env:/simulated_env
+#commentato actuators e manager, in teoria dovrebbero funzionare, magari con qualche bug(?)
+#   actuators:
+#     container_name: actCont
+#     hostname: actuators
+#     build:
+#       context: .  # Il contesto di build è la root del progetto
+#       dockerfile: ./actuators/Dockerfile
+#     volumes:
+#       - ./simulated_env:/app/env
+#     depends_on:
+#       - broker
+#     networks:
+#       - mqtt
+#     environment:
+#       - MQTT_BROKER=mosquitto
+#       - MQTT_PORT=${MOSQUITTO_PORT}
+
+#   manager:
+#     container_name: managerCont
+#     hostname: manager
+#     build:
+#       context: .  # Il contesto di build è la root del progetto
+#       dockerfile: ./manager/Dockerfile
+#     volumes:
+#       - ./simulated_env:/app/env
+#     depends_on:
+#       - broker
+#       - sensors
+#       - actuators
+#     networks:
+#       - mqtt
+#     environment:
+#       - MQTT_BROKER=mosquitto
+#       - MQTT_PORT=${MOSQUITTO_PORT}
+
+# configurazione per aggiungere node-red
+  # node-red:
+  #   image: nodered/node-red
+  #   container_name: node-red
+  #   ports:
+  #     - "1880:1880"  # Porta per l'interfaccia web di Node-RED
+  #   volumes:
+  #     - ./node-red-data:/data  # Salva i flussi di Node-RED
+  #     - ./simulated_env:/app/env  # Monta il file env.json
+  #   depends_on:
+  #     - broker
+  #   networks:
+  #     - mqtt
+  #   environment:
+  #     - NODE_RED_ENABLE_PROJECTS=true
+  #   restart: unless-stopped
 
 networks:
   mqtt:
@@ -46,3 +89,4 @@ networks:
 volumes:
   mosquitto_data:
   simulated_env:
+  node-red-data:

@@ -1,39 +1,61 @@
+import paho.mqtt.client as mqtt
 import json
+import random
 import time
-import paho.mqtt.client as mqtt, time
+import threading
+import logging
 
+# Configura il logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-# Creazione del client MQTT
-mqttc = mqtt.Client()
-
-mqttc.connect("mosquitto-container", 1883, 60)
-
-
-
-FILE_PATH = "/simulated_env/env.json"
-# Lettura dal file
+# Carica la configurazione dell'ambiente
 try:
+    with open("/app/env/env.json") as f:
+        config = json.load(f)
+    logging.info("File env.json caricato correttamente.")
+except Exception as e:
+    logging.error(f"Errore durante la lettura del file env.json: {e}")
+    exit(1)
 
-    i=0
-    while(i<10):
-        i=i+1
-        time.sleep(1)
-        with open(FILE_PATH, "r") as file:
-            data = json.load(file)  # Carica il JSON
+# Connessione al broker MQTT
+client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION2)  # Usa l'API di callback versione 2
+try:
+    client.connect("mosquitto", 1883, 60)
+    logging.info("Connesso al broker MQTT.")
+except Exception as e:
+    logging.error(f"Errore durante la connessione al broker MQTT: {e}")
+    exit(1)
 
-            # Estrai il valore di "value_x"
-            value_x = data.get("data1", {}).get("value_x", None)
+# Funzione per pubblicare i dati dei sensori
+def publish_sensor_data(room, sensor):
+    while True:
+        try:
+            # Genera un valore casuale per il sensore
+            value = round(random.uniform(sensor["min_value"], sensor["max_value"]), 2)
+            # Crea il topic MQTT (es. home/room1/temperature)
+            topic = f"home/{room['name']}/{sensor['type']}"
+            # Pubblica il valore sul topic
+            client.publish(topic, json.dumps({"value": value}))
+            logging.info(f"Pubblicato: {topic} -> {value}")
+        except Exception as e:
+            logging.error(f"Errore durante la pubblicazione dei dati: {e}")
+        # Attendi prima di pubblicare il prossimo valore
+        time.sleep(5)
 
-            if value_x is not None:
-                message= "this is the value_x: "+ str(value_x)
-                mqttc.publish("sens1", message)
-                print(f"published value  : {value_x}")
-            else:
-                print("Errore: valore 'value_x' non trovato nel JSON.")
-except FileNotFoundError:
-    print(f"Errore: il file {FILE_PATH} non esiste.")
-except json.JSONDecodeError:
-    print(f"Errore: il file {FILE_PATH} non è un JSON valido.")
+# Avvia un thread per ogni sensore in ogni stanza
+threads = []
+for room in config["rooms"]:
+    for sensor in room["sensors"]:
+        thread = threading.Thread(target=publish_sensor_data, args=(room, sensor))
+        thread.daemon = True  # Il thread si chiuderà quando il programma principale termina
+        thread.start()
+        threads.append(thread)
+        logging.info(f"Avviato thread per {room['name']}/{sensor['type']}")
 
-
-mqttc.disconnect()
+# Loop per mantenere la connessione attiva
+try:
+    client.loop_forever()
+except KeyboardInterrupt:
+    logging.info("Interruzione manuale del programma.")
+except Exception as e:
+    logging.error(f"Errore durante l'esecuzione del loop MQTT: {e}")
