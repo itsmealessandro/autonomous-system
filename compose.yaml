@@ -39,6 +39,16 @@ services:
     volumes:
       - ./simulated_env:/simulated_env
 
+  analysis:
+    container_name: analysisCont
+    hostname: analysisHost
+    build: ./analysis/
+
+  planner:
+    container_name: plannerCont
+    hostname: plannerHost
+    build: ./planner/
+
 networks:
   mqtt:
     driver: bridge
